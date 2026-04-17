@@ -6,7 +6,9 @@ model_path = sys.argv[1]
 
 print("Converting to ONNX:", model_path)
 
-model = torch.load(model_path)
+# FIXED LINE
+model = torch.load(model_path, weights_only=False)
+
 model.eval()
 
 dummy_input = torch.randn(1, 3, 224, 224)
