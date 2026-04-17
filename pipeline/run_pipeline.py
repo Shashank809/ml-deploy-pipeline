@@ -23,7 +23,7 @@ def find_model():
             return path
 
     # search generated models
-    pt = glob.glob("*.pt")
+    pt = glob.glob("*.pt") + glob.glob("models/*.pt")
     h5 = glob.glob("*.h5")
 
     if pt:
