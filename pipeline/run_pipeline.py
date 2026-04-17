@@ -1,5 +1,6 @@
 import os
 import glob
+import subprocess
 import sys
 
 INPUT_DIR = "input"
@@ -7,44 +8,66 @@ MODEL_DIR = "models"
 
 os.makedirs(MODEL_DIR, exist_ok=True)
 
+
 def find_model():
     files = os.listdir(INPUT_DIR)
 
     for f in files:
         path = os.path.join(INPUT_DIR, f)
 
-        # CASE 1: Python script
+        # -------- CASE 1: Python script --------
         if f.endswith(".py"):
             print("Running Python script to generate model...")
-            os.system(f"python {path}")
 
-        # CASE 2: direct model
+            try:
+                subprocess.run(["python", path], check=True)
+            except subprocess.CalledProcessError:
+                raise Exception("Error while executing input Python script!")
+
+        # -------- CASE 2: Direct model --------
         elif f.endswith(".pt") or f.endswith(".h5"):
+            print("Direct model found:", path)
             return path
 
-    # search generated models
-    pt = glob.glob("*.pt") + glob.glob("models/*.pt")
-    h5 = glob.glob("*.h5")
+    # -------- Search for generated models --------
+    print("Searching for generated model...")
 
-    if pt:
-        return pt[0]
-    if h5:
-        return h5[0]
+    pt_files = glob.glob("*.pt") + glob.glob("models/*.pt")
+    h5_files = glob.glob("*.h5") + glob.glob("models/*.h5")
 
-    raise Exception("No model found!")
+    if pt_files:
+        print("Found PyTorch model:", pt_files[0])
+        return pt_files[0]
+
+    if h5_files:
+        print("Found TensorFlow model:", h5_files[0])
+        return h5_files[0]
+
+    # -------- If nothing found --------
+    raise Exception("❌ No model found! Make sure your script saves model using torch.save() or model.save().")
+
 
 def main():
+    print("===== PIPELINE STARTED =====")
+
+    # -------- Stage 0 --------
     model_path = find_model()
-    print("Model found:", model_path)
+    print("Using model:", model_path)
 
-    # Stage 1
-    os.system(f"python convert/export_onnx.py {model_path}")
+    # -------- Stage 1 --------
+    print("\n===== STAGE 1: ONNX CONVERSION =====")
+    subprocess.run(["python", "convert/export_onnx.py", model_path], check=True)
 
-    # Stage 2
-    os.system("python optimize/quantize.py")
+    # -------- Stage 2 --------
+    print("\n===== STAGE 2: QUANTIZATION =====")
+    subprocess.run(["python", "optimize/quantize.py"], check=True)
 
-    # Stage 3
-    os.system("python tests/check_accuracy.py")
+    # -------- Stage 3 --------
+    print("\n===== STAGE 3: VALIDATION =====")
+    subprocess.run(["python", "tests/check_accuracy.py"], check=True)
+
+    print("\n===== PIPELINE COMPLETED SUCCESSFULLY =====")
+
 
 if __name__ == "__main__":
     main()
