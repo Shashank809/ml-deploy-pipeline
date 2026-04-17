@@ -6,6 +6,7 @@ print("Loading ResNet18...")
 model = models.resnet18(pretrained=True)
 model.eval()
 
-torch.save(model, "model.pt")
+# ✅ SAVE ONLY WEIGHTS
+torch.save(model.state_dict(), "model.pt")
 
-print("Saved as model.pt")
+print("Saved weights as model.pt")
