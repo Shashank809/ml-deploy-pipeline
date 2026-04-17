@@ -1,10 +1,15 @@
+import onnx
 from onnxruntime.quantization import quantize_dynamic, QuantType
 
 print("Starting quantization...")
 
+model = onnx.load("models/model.onnx")
+
+onnx.save(model, "models/model_clean.onnx")
+
 quantize_dynamic(
-    model_input="models/model.onnx",
-    model_output="models/model_int8.onnx",
+    "models/model_clean.onnx",
+    "models/model_int8.onnx",
     weight_type=QuantType.QInt8
 )
 
