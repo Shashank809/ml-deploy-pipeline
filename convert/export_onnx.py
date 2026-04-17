@@ -1,4 +1,5 @@
 import torch
+import torchvision.models as models
 import sys
 import os
 
@@ -6,9 +7,8 @@ model_path = sys.argv[1]
 
 print("Converting to ONNX:", model_path)
 
-# FIXED LINE
-model = torch.load(model_path, weights_only=False)
-
+model = models.resnet18()
+model.load_state_dict(torch.load(model_path))
 model.eval()
 
 dummy_input = torch.randn(1, 3, 224, 224)
@@ -20,7 +20,12 @@ torch.onnx.export(
     dummy_input,
     "models/model.onnx",
     input_names=["input"],
-    output_names=["output"]
+    output_names=["output"],
+    dynamic_axes={
+        "input": {0: "batch_size"},
+        "output": {0: "batch_size"}
+    },
+    opset_version=12   # 
 )
 
-print("ONNX model saved at models/model.onnx")
+print("ONNX model saved")
